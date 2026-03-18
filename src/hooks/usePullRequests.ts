@@ -12,6 +12,7 @@ import {
   fetchPRDetails,
   fetchOrgMembers,
   fetchAllIssueComments,
+  fetchAuthorCreatedDates,
 } from "../lib/github";
 import type { PRDetails } from "../lib/github";
 import { classifyPR } from "../lib/classify";
@@ -23,6 +24,8 @@ import {
   setCachedPRDetails,
   getCachedOrgMembers,
   setCachedOrgMembers,
+  getCachedAuthorCreatedDates,
+  setCachedAuthorCreatedDates,
 } from "../lib/mergeCache";
 import { calculateMergeScore } from "../lib/mergeScore";
 
@@ -63,16 +66,21 @@ export function usePullRequests(token: string | null) {
         return classifyPR(pr, reviewMap.get(pr.number) ?? [], ci?.status ?? "success", ci?.checks ?? [], headCommitDates.get(pr.number), commentMap.get(pr.number) ?? []);
       });
 
-      // Fetch author merge stats + org members (both cached 30 min)
+      // Fetch author merge stats + org members + author created dates (all cached 30 min)
       const cachedStats = getCachedAuthorStats();
       const cachedMembers = getCachedOrgMembers();
+      const cachedCreatedDates = getCachedAuthorCreatedDates();
 
-      const [authorStats, orgMembers] = await Promise.all([
+      const uniqueLogins = [...new Set(rawPRs.map((p) => p.user?.login).filter(Boolean))] as string[];
+
+      const [authorStats, orgMembers, authorCreatedDates] = await Promise.all([
         cachedStats ?? fetchRecentClosedPRs(octokit),
         cachedMembers ?? fetchOrgMembers(octokit),
+        cachedCreatedDates ?? fetchAuthorCreatedDates(octokit, uniqueLogins),
       ]);
       if (!cachedStats) setCachedAuthorStats(authorStats);
       if (!cachedMembers) setCachedOrgMembers(orgMembers);
+      if (!cachedCreatedDates) setCachedAuthorCreatedDates(authorCreatedDates);
 
       // Fetch PR details (cached indefinitely per PR)
       const cachedDetails = getCachedPRDetails();
@@ -90,11 +98,13 @@ export function usePullRequests(token: string | null) {
 
       // Attach merge scores
       const scored = classified.map((pr) => {
+        const createdAt = authorCreatedDates.get(pr.author.login);
         const breakdown = calculateMergeScore(
           pr,
           authorStats.get(pr.author.login),
           allDetails.get(pr.number),
           orgMembers.has(pr.author.login),
+          createdAt,
         );
         const details = allDetails.get(pr.number);
         return {
@@ -103,6 +113,7 @@ export function usePullRequests(token: string | null) {
           deletions: details?.deletions,
           mergeScore: breakdown.score,
           mergeScoreBreakdown: breakdown,
+          authorCreatedAt: createdAt,
         };
       });
 

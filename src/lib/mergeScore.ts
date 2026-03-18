@@ -14,6 +14,7 @@ export function calculateMergeScore(
   authorStats: AuthorMergeStats | undefined,
   prDetails: PRDetails | undefined,
   isOrgMember: boolean,
+  authorCreatedAt: string | undefined,
 ): MergeScoreBreakdown {
   // Author merge rate (35%) — Bayesian: blend toward 50% prior for small samples.
   const PRIOR = 0.5;
@@ -58,7 +59,13 @@ export function calculateMergeScore(
 
   const orgBonus = isOrgMember ? 15 : 0;
 
-  const rawTotal = Math.min(100, authorScore + sizeComponent + reviewComponent + orgBonus);
+  let accountAgeBonus = 0;
+  if (authorCreatedAt) {
+    const ageYears = (Date.now() - new Date(authorCreatedAt).getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    accountAgeBonus = Math.round(Math.min(ageYears / 5, 1) * 10);
+  }
+
+  const rawTotal = Math.min(100, authorScore + sizeComponent + reviewComponent + orgBonus + accountAgeBonus);
 
   const normalized = rawTotal / 100;
   const spread = normalized < 0.5
@@ -73,6 +80,7 @@ export function calculateMergeScore(
     sizeScore: Math.round(sizeScore),
     reviewScore: Math.round(reviewScore),
     orgBonus,
+    accountAgeBonus,
     rawTotal: Math.round(rawTotal),
   };
 }

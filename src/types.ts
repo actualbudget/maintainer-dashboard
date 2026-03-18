@@ -42,6 +42,7 @@ export interface ClassifiedPR {
   deletions?: number;
   mergeScore?: number;
   mergeScoreBreakdown?: MergeScoreBreakdown;
+  authorCreatedAt?: string;
 }
 
 export interface CheckRun {
@@ -57,6 +58,7 @@ export interface MergeScoreBreakdown {
   sizeScore: number;
   reviewScore: number;
   orgBonus: number;
+  accountAgeBonus: number;
   rawTotal: number;
 }
 

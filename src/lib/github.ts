@@ -286,6 +286,30 @@ export async function fetchOrgMembers(octokit: Octokit): Promise<Set<string>> {
   }
 }
 
+/** Fetch account creation dates for a list of unique author logins. */
+export async function fetchAuthorCreatedDates(
+  octokit: Octokit,
+  logins: string[],
+): Promise<Map<string, string>> {
+  const results = await mapWithConcurrency(
+    logins,
+    CONCURRENT_REVIEW_FETCHES,
+    async (login) => {
+      try {
+        const { data } = await octokit.rest.users.getByUsername({ username: login });
+        return { login, createdAt: data.created_at };
+      } catch {
+        return { login, createdAt: undefined };
+      }
+    },
+  );
+  const map = new Map<string, string>();
+  for (const r of results) {
+    if (r.createdAt) map.set(r.login, r.createdAt);
+  }
+  return map;
+}
+
 /** Fetch required check context names from branch protection. Returns null if inaccessible. */
 export async function fetchRequiredChecks(
   octokit: Octokit,

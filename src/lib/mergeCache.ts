@@ -4,6 +4,7 @@ import { MERGE_STATS_CACHE_TTL_MS } from "../constants";
 const AUTHOR_STATS_KEY = "merge-author-stats";
 const PR_DETAILS_KEY = "merge-pr-details";
 const ORG_MEMBERS_KEY = "merge-org-members";
+const AUTHOR_CREATED_DATES_KEY = "merge-author-created-dates";
 
 interface CachedAuthorStats {
   timestamp: number;
@@ -53,6 +54,31 @@ export function setCachedOrgMembers(members: Set<string>): void {
     data: [...members],
   };
   localStorage.setItem(ORG_MEMBERS_KEY, JSON.stringify(cached));
+}
+
+interface CachedAuthorCreatedDates {
+  timestamp: number;
+  data: Record<string, string>;
+}
+
+export function getCachedAuthorCreatedDates(): Map<string, string> | null {
+  try {
+    const raw = localStorage.getItem(AUTHOR_CREATED_DATES_KEY);
+    if (!raw) return null;
+    const cached: CachedAuthorCreatedDates = JSON.parse(raw);
+    if (Date.now() - cached.timestamp > MERGE_STATS_CACHE_TTL_MS) return null;
+    return new Map(Object.entries(cached.data));
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedAuthorCreatedDates(dates: Map<string, string>): void {
+  const cached: CachedAuthorCreatedDates = {
+    timestamp: Date.now(),
+    data: Object.fromEntries(dates),
+  };
+  localStorage.setItem(AUTHOR_CREATED_DATES_KEY, JSON.stringify(cached));
 }
 
 export function getCachedPRDetails(): Map<number, PRDetails> {

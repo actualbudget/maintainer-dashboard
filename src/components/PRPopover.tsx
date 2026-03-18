@@ -168,6 +168,12 @@ export default function PRPopover({ pr, events, eventsLoading }: PRPopoverProps)
                 <span className="font-medium text-text-primary">+{breakdown.orgBonus}</span>
               </div>
             )}
+            {breakdown.accountAgeBonus > 0 && (
+              <div className="flex items-center justify-between text-text-secondary">
+                <span>Account age bonus</span>
+                <span className="font-medium text-text-primary">+{breakdown.accountAgeBonus}</span>
+              </div>
+            )}
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2">
             <span className="text-text-secondary">Final score</span>
