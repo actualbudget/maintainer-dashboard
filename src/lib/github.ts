@@ -257,7 +257,7 @@ export async function fetchRequiredChecks(
     const { data } = await octokit.rest.repos.getBranchProtection({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      branch: "main",
+      branch: "master",
     });
     const contexts =
       data.required_status_checks?.contexts ?? [];
