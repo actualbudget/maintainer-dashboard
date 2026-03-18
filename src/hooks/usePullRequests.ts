@@ -11,6 +11,7 @@ import {
   fetchRecentClosedPRs,
   fetchPRDetails,
   fetchOrgMembers,
+  fetchAllIssueComments,
 } from "../lib/github";
 import type { PRDetails } from "../lib/github";
 import { classifyPR } from "../lib/classify";
@@ -45,10 +46,12 @@ export function usePullRequests(token: string | null) {
       const octokit = createOctokit(token);
       const rawPRs = await fetchOpenPRs(octokit);
       const prHeads = rawPRs.map((p) => ({ number: p.number, headSha: p.head.sha }));
-      const [reviewMap, requiredChecks, headCommitDates] = await Promise.all([
-        fetchAllReviews(octokit, rawPRs.map((p) => p.number)),
+      const prNumbers = rawPRs.map((p) => p.number);
+      const [reviewMap, requiredChecks, headCommitDates, commentMap] = await Promise.all([
+        fetchAllReviews(octokit, prNumbers),
         fetchRequiredChecks(octokit),
         fetchHeadCommitDates(octokit, prHeads),
+        fetchAllIssueComments(octokit, prNumbers),
       ]);
       const ciMap = await fetchAllCheckStatuses(
         octokit,
@@ -57,7 +60,7 @@ export function usePullRequests(token: string | null) {
       );
       const classified = rawPRs.map((pr) => {
         const ci = ciMap.get(pr.number);
-        return classifyPR(pr, reviewMap.get(pr.number) ?? [], ci?.status ?? "success", ci?.checks ?? [], headCommitDates.get(pr.number));
+        return classifyPR(pr, reviewMap.get(pr.number) ?? [], ci?.status ?? "success", ci?.checks ?? [], headCommitDates.get(pr.number), commentMap.get(pr.number) ?? []);
       });
 
       // Fetch author merge stats + org members (both cached 30 min)

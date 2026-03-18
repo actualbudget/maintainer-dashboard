@@ -120,6 +120,43 @@ export async function fetchHeadCommitDates(
   return map;
 }
 
+export interface IssueComment {
+  user: { login: string } | null;
+  created_at: string;
+}
+
+/** Fetch issue comments for multiple PRs with bounded concurrency. */
+export async function fetchAllIssueComments(
+  octokit: Octokit,
+  prNumbers: number[],
+): Promise<Map<number, IssueComment[]>> {
+  const results = await mapWithConcurrency(
+    prNumbers,
+    CONCURRENT_REVIEW_FETCHES,
+    async (num) => {
+      const comments: IssueComment[] = [];
+      for await (const response of octokit.paginate.iterator(
+        octokit.rest.issues.listComments,
+        {
+          owner: REPO_OWNER,
+          repo: REPO_NAME,
+          issue_number: num,
+          per_page: 100,
+        },
+      )) {
+        comments.push(
+          ...response.data.map((c) => ({
+            user: c.user ? { login: c.user.login } : null,
+            created_at: c.created_at,
+          })),
+        );
+      }
+      return comments;
+    },
+  );
+  return new Map(prNumbers.map((num, i) => [num, results[i]]));
+}
+
 export async function fetchRecentClosedPRs(
   octokit: Octokit,
 ): Promise<Map<string, AuthorMergeStats>> {

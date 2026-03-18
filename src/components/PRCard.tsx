@@ -8,13 +8,6 @@ import { scoreColors } from "../lib/scoreColors";
 import LabelBadge from "./LabelBadge";
 import PRPopover from "./PRPopover";
 
-function ageBorderClass(updatedAt: string): string {
-  const days = (Date.now() - new Date(updatedAt).getTime()) / 86_400_000;
-  if (days >= 7) return "border-l-red-500/70";
-  if (days >= 3) return "border-l-orange-400/70";
-  return "";
-}
-
 const REVIEWER_RING: Record<ReviewerState, string> = {
   approved: "ring-green-400/80",
   changes_requested: "ring-red-400/80",
@@ -102,12 +95,11 @@ export default function PRCard({ pr, index }: PRCardProps) {
     return () => clearTimeout(hoverTimer.current);
   }, []);
 
-  const age = ageBorderClass(pr.updatedAt);
   const sc = pr.mergeScore != null ? scoreColors(pr.mergeScore) : null;
 
   const cardClass = isStale
     ? "border-border/50 bg-surface-2/30 opacity-50 grayscale-[40%]"
-    : `border-border bg-surface-2/70 ${age ? `border-l-2 ${age}` : ""}`;
+    : "border-border bg-surface-2/70";
 
   return (
     <div

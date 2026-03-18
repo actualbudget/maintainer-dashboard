@@ -10,7 +10,7 @@ export default function LabelBadge({ label }: LabelBadgeProps) {
   return (
     <span
       className="inline-block rounded-md px-1.5 py-px text-[10px] font-semibold whitespace-nowrap"
-      style={{ backgroundColor: `${bg}30`, color: bg, borderLeft: `2px solid ${bg}` }}
+      style={{ backgroundColor: `${bg}30`, color: bg }}
     >
       {label.name}
     </span>

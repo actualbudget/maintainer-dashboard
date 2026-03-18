@@ -1,5 +1,5 @@
 import type { CIStatus, CheckRun, ClassifiedPR, ColumnId, CodeRabbitStatus, PRLabel, Reviewer, ReviewerState } from "../types";
-import type { RawPR, RawReview } from "./github";
+import type { RawPR, RawReview, IssueComment } from "./github";
 import { LABEL_APPROVED, LABEL_READY, LABEL_WIP } from "../constants";
 
 const HIDDEN_LABELS = new Set([LABEL_APPROVED, LABEL_READY, LABEL_WIP, "AI generated"]);
@@ -56,7 +56,7 @@ function classifyColumn(
   return "wip";
 }
 
-function buildReviewers(pr: RawPR, reviews: RawReview[]): Reviewer[] {
+function buildReviewers(pr: RawPR, reviews: RawReview[], issueComments: IssueComment[] = []): Reviewer[] {
   const humanReviews = reviews.filter(isHumanReview);
 
   // Last decisive review state per user.
@@ -71,11 +71,26 @@ function buildReviewers(pr: RawPR, reviews: RawReview[]): Reviewer[] {
       "commented";
     const existing = reviewStateByLogin.get(r.user!.login);
     if (state === "commented" && (existing === "approved" || existing === "changes_requested")) {
+      // Still update the date — the reviewer interacted, even if their decision stands.
+      if (r.submitted_at) {
+        reviewDateByLogin.set(r.user!.login, r.submitted_at);
+      }
       continue;
     }
     reviewStateByLogin.set(r.user!.login, state);
     if (r.submitted_at) {
       reviewDateByLogin.set(r.user!.login, r.submitted_at);
+    }
+  }
+
+  // Merge issue comment dates — a regular comment also counts as interaction
+  for (const c of issueComments) {
+    if (!c.user?.login) continue;
+    const login = c.user.login;
+    if (login.toLowerCase().includes("coderabbitai")) continue;
+    const existing = reviewDateByLogin.get(login);
+    if (!existing || c.created_at > existing) {
+      reviewDateByLogin.set(login, c.created_at);
     }
   }
 
@@ -88,7 +103,7 @@ function buildReviewers(pr: RawPR, reviews: RawReview[]): Reviewer[] {
   }));
 }
 
-export function classifyPR(pr: RawPR, reviews: RawReview[], ciStatus: CIStatus = "success", ciChecks: CheckRun[] = [], headCommitDate?: string): ClassifiedPR {
+export function classifyPR(pr: RawPR, reviews: RawReview[], ciStatus: CIStatus = "success", ciChecks: CheckRun[] = [], headCommitDate?: string, issueComments: IssueComment[] = []): ClassifiedPR {
   const humanReviews = reviews.filter(isHumanReview);
 
   return {
@@ -103,7 +118,7 @@ export function classifyPR(pr: RawPR, reviews: RawReview[], ciStatus: CIStatus =
       avatarUrl: pr.user?.avatar_url ?? "",
     },
     labels: getLabels(pr),
-    reviewers: buildReviewers(pr, reviews),
+    reviewers: buildReviewers(pr, reviews, issueComments),
     humanReviewCount: humanReviews.length,
     isAI: pr.labels.some((l) => l.name?.toLowerCase() === "ai generated") || pr.title.startsWith("[AI]"),
     codeRabbitStatus: getCodeRabbitStatus(reviews),

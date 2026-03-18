@@ -1,3 +1,10 @@
+const CONTROL_BASE =
+  "cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-medium transition-all focus:outline-none focus:ring-1 focus:ring-accent/40";
+const CONTROL_DEFAULT =
+  `${CONTROL_BASE} border-border bg-surface-2/80 text-text-secondary hover:border-border-hover hover:bg-surface-3/60 hover:text-text-primary`;
+const CONTROL_ACTIVE =
+  `${CONTROL_BASE} border-accent/40 bg-accent/10 text-accent hover:border-accent/60 hover:bg-accent/15`;
+
 interface FilterBarProps {
   authors: string[];
   allLabels: string[];
@@ -42,9 +49,6 @@ export default function FilterBar({
     return a.localeCompare(b);
   });
 
-  const selectClasses =
-    "cursor-pointer rounded-lg border border-border bg-surface-2/80 px-3 py-1.5 text-xs font-medium text-text-secondary transition-all hover:border-border-hover hover:bg-surface-3/60 hover:text-text-primary focus:outline-none focus:ring-1 focus:ring-accent/40";
-
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="mr-2 flex rounded-lg border border-border bg-surface-2/80 p-0.5">
@@ -74,7 +78,9 @@ export default function FilterBar({
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search PRs…"
-        className="w-40 rounded-lg border border-border bg-surface-2/80 px-3 py-1.5 text-xs font-medium text-text-primary placeholder-text-tertiary transition-all hover:border-border-hover focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/40"
+        className={`w-40 text-text-primary placeholder-text-tertiary ${
+          searchQuery ? CONTROL_ACTIVE : CONTROL_DEFAULT
+        }`}
       />
       <span className="mr-1 text-[11px] font-medium uppercase tracking-wider text-text-tertiary">
         Filter
@@ -82,7 +88,7 @@ export default function FilterBar({
       <select
         value={selectedAuthor}
         onChange={(e) => onAuthorChange(e.target.value)}
-        className={selectClasses}
+        className={selectedAuthor ? CONTROL_ACTIVE : CONTROL_DEFAULT}
       >
         <option value="">All authors</option>
         {authors.map((a) => (
@@ -95,7 +101,7 @@ export default function FilterBar({
         <select
           value={selectedAssignee}
           onChange={(e) => onAssigneeChange(e.target.value)}
-          className={selectClasses}
+          className={selectedAssignee ? CONTROL_ACTIVE : CONTROL_DEFAULT}
         >
           <option value="">All assignees</option>
           {sortedAssignees.map((a) => (
@@ -108,7 +114,7 @@ export default function FilterBar({
       <select
         value={selectedLabel}
         onChange={(e) => onLabelChange(e.target.value)}
-        className={selectClasses}
+        className={selectedLabel ? CONTROL_ACTIVE : CONTROL_DEFAULT}
       >
         <option value="">All labels</option>
         {allLabels.map((l) => (
@@ -123,11 +129,7 @@ export default function FilterBar({
         </span>
         <button
           onClick={onSortToggle}
-          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
-            sortByScore
-              ? "border-accent/40 bg-accent/10 text-accent"
-              : "border-border bg-surface-2/80 text-text-secondary hover:border-border-hover hover:bg-surface-3/60 hover:text-text-primary"
-          }`}
+          className={sortByScore ? CONTROL_ACTIVE : CONTROL_DEFAULT}
         >
           {sortByScore ? "Merge likelihood" : "Updated"}
         </button>

@@ -26,9 +26,13 @@ function eventTypeColor(type: TimelineEvent["type"]): string {
   }
 }
 
+function isPassing(check: CheckRun): boolean {
+  return check.status === "completed" && (check.conclusion === "success" || check.conclusion === "neutral" || check.conclusion === "skipped");
+}
+
 function checkDot(check: CheckRun): string {
   if (check.status !== "completed") return "bg-yellow-400";
-  if (check.conclusion === "success" || check.conclusion === "neutral" || check.conclusion === "skipped") return "bg-green-400";
+  if (isPassing(check)) return "bg-green-400";
   return "bg-red-400";
 }
 
@@ -55,7 +59,7 @@ function sizeTag(additions: number, deletions: number): string {
 export default function PRPopover({ pr, events, eventsLoading }: PRPopoverProps) {
   const checks = pr.ciChecks ?? [];
   const sortedChecks = [...checks].sort((a, b) => checkSortKey(a) - checkSortKey(b));
-  const allPassing = checks.length > 0 && checks.every((c) => c.status === "completed" && (c.conclusion === "success" || c.conclusion === "neutral" || c.conclusion === "skipped"));
+  const allPassing = checks.length > 0 && checks.every(isPassing);
   const breakdown = pr.mergeScoreBreakdown;
   const finalScoreColors = breakdown ? scoreColors(breakdown.score) : null;
 
@@ -120,7 +124,7 @@ export default function PRPopover({ pr, events, eventsLoading }: PRPopoverProps)
           </div>
         ) : (
           <div className="space-y-1">
-            {sortedChecks.map((check, i) => (
+            {sortedChecks.filter((c) => !isPassing(c)).map((check, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${checkDot(check)}`} />
                 {check.detailsUrl ? (
@@ -137,6 +141,15 @@ export default function PRPopover({ pr, events, eventsLoading }: PRPopoverProps)
                 )}
               </div>
             ))}
+            {(() => {
+              const passingCount = checks.filter(isPassing).length;
+              return passingCount > 0 ? (
+                <div className="flex items-center gap-1.5 text-text-tertiary">
+                  <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" />
+                  {passingCount} other check{passingCount !== 1 ? "s" : ""} passed
+                </div>
+              ) : null;
+            })()}
           </div>
         )}
       </div>

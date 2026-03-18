@@ -21,7 +21,11 @@ export default function App() {
     setSortByScore,
   } = usePullRequests(token);
 
-  if (!token || authLoading || !user) {
+  if (authLoading) {
+    return <Spinner />;
+  }
+
+  if (!token || !user) {
     return <LoginScreen onLogin={login} />;
   }
 
