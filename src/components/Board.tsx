@@ -21,6 +21,9 @@ export default function Board({ columns, authors, allLabels, assignees, currentU
   const [selectedAssignee, setSelectedAssignee] = useSearchParam("assignee");
   const [searchQuery, setSearchQuery] = useSearchParam("q");
   const [view, setView] = useSearchParam("view");
+  const [impersonate, setImpersonate] = useSearchParam("impersonate");
+
+  const effectiveUser = impersonate || currentUser;
 
   const searchLower = searchQuery.toLowerCase();
 
@@ -47,12 +50,24 @@ export default function Board({ columns, authors, allLabels, assignees, currentU
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
+      {impersonate && (
+        <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-accent/10 border border-accent/20 px-3 py-1.5 text-sm text-accent">
+          <span>Viewing as <strong>{impersonate}</strong></span>
+          <button
+            onClick={() => setImpersonate("")}
+            className="ml-auto text-accent/60 hover:text-accent transition-colors cursor-pointer"
+            title="Clear impersonation"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <div className="px-4 py-3">
         <FilterBar
           authors={authors}
           allLabels={allLabels}
           assignees={assignees}
-          currentUser={currentUser}
+          currentUser={effectiveUser}
           selectedAuthor={selectedAuthor}
           selectedLabel={selectedLabel}
           selectedAssignee={selectedAssignee}
@@ -68,7 +83,7 @@ export default function Board({ columns, authors, allLabels, assignees, currentU
         />
       </div>
       {view === "queue" ? (
-        <MyQueue prs={allFilteredPrs} currentUser={currentUser} sortByScore={sortByScore} />
+        <MyQueue prs={allFilteredPrs} currentUser={effectiveUser} sortByScore={sortByScore} />
       ) : (
         <div className="flex-1 flex gap-0 overflow-x-auto px-4 pb-4 md:flex-row flex-col items-stretch">
           {filtered.map((col, i) => (

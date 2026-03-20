@@ -1,4 +1,5 @@
 import type { GitHubUser } from "../types";
+import { useSearchParam } from "../hooks/useSearchParams";
 
 interface HeaderProps {
   user: GitHubUser;
@@ -15,6 +16,11 @@ export default function Header({
   onRefresh,
   onLogout,
 }: HeaderProps) {
+  const [impersonate] = useSearchParam("impersonate");
+  const displayLogin = impersonate || user.login;
+  const displayAvatar = impersonate
+    ? `https://github.com/${impersonate}.png?size=40`
+    : user.avatar_url;
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-1/60 px-5 py-3 backdrop-blur-xl">
       <div className="flex items-center gap-3">
@@ -45,11 +51,11 @@ export default function Header({
       <div className="flex items-center gap-2">
         <div className="ml-1 flex items-center gap-2 rounded-lg border border-border px-2.5 py-1">
           <img
-            src={user.avatar_url}
-            alt={user.login}
+            src={displayAvatar}
+            alt={displayLogin}
             className="h-5 w-5 rounded-full ring-1 ring-border"
           />
-          <span className="text-xs font-medium text-text-secondary">{user.login}</span>
+          <span className="text-xs font-medium text-text-secondary">{displayLogin}</span>
         </div>
         <button
           onClick={onLogout}
